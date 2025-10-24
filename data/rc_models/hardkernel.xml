@@ -1,0 +1,47 @@
+<rcs>
+	<rc id="2">
+		<button label="POWER" pos="93,23" />
+		<button label="DREAMSELECT" pos="51,55" />
+		<button label="TVSELECT" pos="97,55" />
+		<button label="1" pos="35,82" />
+		<button label="2" pos="76,82" />
+		<button label="3" pos="116,82" />
+		<button label="4" pos="35,104" />
+		<button label="5" pos="76,104" />
+		<button label="6" pos="116,104" />
+		<button label="7" pos="35,126" />
+		<button label="8" pos="76,126" />
+		<button label="9" pos="116,126" />
+		<button label="ARROWLEFT" pos="27,153" />
+		<button label="0" pos="76,149" />
+		<button label="ARROWRIGHT" pos="121,153" />
+		<button label="VOL+" pos="32,309" />
+		<button label="VOL-" pos="32,350" />
+		<button label="MUTE" pos="76,51" />
+		<button label="EXIT" pos="76,325" />
+		<button label="BOUQUET+" pos="119,309" />
+		<button label="BOUQUET-" pos="119,350" />
+		<button label="INFO" pos="117,202" />
+		<button label="MENU" pos="33,210" />
+		<button label="OK" pos="76,233" />
+		<button label="UP" pos="76,203" />
+		<button label="DOWN" pos="76,264" />
+		<button label="LEFT" pos="46,234" />
+		<button label="RIGHT" pos="106,234" />
+		<button label="AUDIO" pos="115,263" />
+		<button label="VIDEO" pos="33,263" />
+		<button label="RED" pos="32,376" />
+		<button label="GREEN" pos="61,376" />
+		<button label="YELLOW" pos="90,376" />
+		<button label="BLUE" pos="119,376" />
+		<button label="TV" pos="46,429" />
+		<button label="RADIO" pos="105,429" />
+		<button label="TEXT" pos="75,346" />
+		<button label="HELP" pos="75,285" />
+		<button label="PLAYPAUSE" pos="76,429" />
+		<button label="STOP" pos="105,429" />
+		<button label="REWIND" pos="62,406" />
+		<button label="FASTFORWARD" pos="90,406" />
+		<button label="RECORD" pos="46,429" />
+	</rc>
+</rcs>

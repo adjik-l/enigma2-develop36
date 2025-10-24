@@ -1,0 +1,292 @@
+#!/bin/sh
+
+prefix="@prefix@"
+exec_prefix="@exec_prefix@"
+datarootdir="@datarootdir@"
+
+export PATH="${PATH}:/usr/script"
+
+# LC_ALL available?
+if [ -z $LC_ALL ]; then
+	export LC_ALL=en_GB.utf8
+fi
+
+if [ -d /home/root ]; then
+	export HOME="/home/root"
+	cd
+fi
+
+# Create debug first run
+if [ "$(grep -i config.misc.firstrun=False /etc/enigma2/settings)" == "" ]; then
+	DEBUG_LVL=4
+	ENIGMA_DEBUG_TIME=1
+fi
+
+if [ -f "@bindir@/libreader" ]; then
+	COUNT=`ps -ef | grep libreader | grep -v "grep" | wc -l`
+	if [ "${COUNT}" -eq "0" ];then
+		@bindir@/libreader 720P_50
+	fi
+fi
+
+#check for specific pagecache helper lib
+if [ -e @libdir@/libpagecache.so ]; then
+	LIBS="$LIBS @libdir@/libpagecache.so"
+fi
+
+# Check for sundtek tuner helper lib.
+if [ -e /opt/lib/libmediaclient.so ]; then
+	LIBS="/opt/lib/libmediaclient.so @libdir@/libopen.so.0.0.0"
+else
+	LIBS="@libdir@/libopen.so.0.0.0"
+fi
+
+if [ -f /proc/stb/fp/nec_ir ]; then
+	echo "1" > /proc/stb/fp/nec_ir
+	[ -f /sys/class/remote/amremote/protocol ] && echo "2" > /sys/class/remote/amremote/protocol
+fi
+
+# Create and set log folder
+DEBUGDIR="/home/root/logs/"
+if [ ! -d $DEBUGDIR ] ; then mkdir -p $DEBUGDIR; fi
+if [ "$(grep config.crash.debugPath= /etc/enigma2/settings | sed 's/config.crash.debugPath=//g')" != "" -a -d "$(grep config.crash.debugPath= /etc/enigma2/settings | sed 's/config.crash.debugPath=//g')" ]; then
+	DEBUGDIR=$(grep config.crash.debugPath= /etc/enigma2/settings | sed 's/config.crash.debugPath=//g')
+fi
+
+if [ "$(grep -i config.crash.coredump=true /etc/enigma2/settings)" != "" ]; then
+	if [ -n "${DEBUGDIR}" ] && [ -d "${DEBUGDIR}" ] || DEBUGDIR="/home/root/logs/" ]; then
+		COREDUMPSIZE=$((10 * 512 * 4 - 1 * 512 * 4)) # size is in blocks (512 byte) so this sets 10 MB - 1 MB for log files
+		COREDUMPFILE=${DEBUGDIR}%t-enigma2-core.dump
+	fi
+	if [ "$(grep -i config.crash.sizeloglimit= /etc/enigma2/settings | sed 's/config.crash.sizeloglimit=//g')" != "" ]; then
+		COREDUMPSIZE=$(grep -i config.crash.sizeloglimit= /etc/enigma2/settings | sed 's/config.crash.sizeloglimit=//g')
+		COREDUMPSIZE=$((${COREDUMPSIZE} * 512 * 4 - 1 * 512 * 4))
+	fi
+	echo ${COREDUMPFILE} > /proc/sys/kernel/core_pattern
+	ulimit -c ${COREDUMPSIZE}
+fi
+
+# Show backdrop on enigma2 start.
+if [ -x @bindir@/showiframe ]; then
+	if [ -f @datadir@/enigma2/backdrop.mvi ]; then
+		@bindir@/showiframe @datadir@/enigma2/backdrop.mvi
+	fi
+fi
+
+# Create debug first run
+if [ -n "$DEBUG_LVL" ]; then
+	(LD_PRELOAD=$LIBS ENIGMA_DEBUG_LVL=$DEBUG_LVL ENIGMA_DEBUG_TIME=$ENIGMA_DEBUG_TIME @bindir@/enigma2 &> ${DEBUGDIR}$(date +%Y%m%d-%H%M%S)_enigma2_debug_first_run.log) &
+fi
+
+enigma2pid=$!
+
+# Enable generation of core dumps with ELF header included.
+# This seem to be required by gdb.
+# Would be default if kernel is configured with CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS.
+# Default coredump filter can only be set via kernel command line.
+# In all other cases this is only available per process.
+if [ "$(grep -i config.crash.coredump=true /etc/enigma2/settings)" != "" ]; then
+	COREDUMPFILTER=0x33
+	echo ${COREDUMPFILTER} > /proc/${enigma2pid}/coredump_filter
+fi
+
+wait ${enigma2pid}
+
+# This should not be done as it will suppress the appropriate diagnostic message from within Enigma2.
+#
+# if [ ! -e /etc/enigma2/settings ]; then
+# 	touch /etc/enigma2/settings
+# fi
+
+# Enigma main loop.
+while : ; do
+	# Hook to execute scripts always before enigma2 start.
+	if [ -x "@bindir@/enigma2_pre_start.sh" ]; then
+		"@bindir@/enigma2_pre_start.sh"
+	fi
+
+	# Dreamci.
+	if [ -x "@bindir@/enigma2_pre_start_ciplus.sh" ]; then
+		"@bindir@/enigma2_pre_start_ciplus.sh"
+	fi
+
+	# Start enigma.
+	sync
+	# Not restarting enigma2 when it's leaking memory results in unusable system.
+	# (sleep 0.1; echo "Enigma2 is the main application so adjust oom score!"; PID=$(pidof enigma2); \
+		# [ -e "/proc/${PID}/oom_score_adj" ] && echo "-999" > "/proc/${PID}/oom_score_adj" || echo "-17" > "/proc/${PID}/oom_adj";) &
+
+	# Set the debug level to be used for enigma2 logging.
+	if [ -z "${ENIGMA_DEBUG_LVL}" ]; then
+		DEBUGLEVEL=`sed -En 's|^config\.crash\.debugLevel=(.+)$|\1|p' "@sysconfdir@/enigma2/settings"`
+		[ -n "${DEBUGLEVEL}" ] || DEBUGLEVEL="3"
+		DEBUG_LVL="${DEBUGLEVEL}"
+	else
+		DEBUG_LVL="${ENIGMA_DEBUG_LVL}"
+	fi
+
+	# Set time format used to prefix each line in the debug logs.
+	DEBUGTIME=`sed -En 's|^config\.crash\.debugTimeFormat=(.+)$|\1|p' "@sysconfdir@/enigma2/settings"`
+	[ -n "${DEBUGTIME}" ] || DEBUGTIME="2"
+	DEBUG_TIME="${DEBUGTIME}"
+
+	if [ "${DEBUG_LVL}" -lt "4" ]; then
+		LD_PRELOAD="${LIBS}" ENIGMA_DEBUG_LVL="${DEBUG_LVL}" ENIGMA_DEBUG_TIME="${DEBUG_TIME}" "@bindir@/enigma2"
+	else
+		[ -n "${DEBUGDIR}" ] && [ -d "${DEBUGDIR}" ] || DEBUGDIR="/home/root/logs/"
+		# Remove old logfiles.
+		KEEP=`sed -En 's|^config\.crash\.debugFileCount=(.+)$|\1|p' "@sysconfdir@/enigma2/settings"`
+		[ -n "${KEEP}" ] || KEEP="5"
+		for FILE in `ls -t "${DEBUGDIR}"enigma2_debug_*.log`; do
+			let "KEEP--"
+			if [ "${KEEP}" -lt "1" ]; then
+				rm "${FILE}"
+			fi
+		done
+		# Today's log file.
+		FILE="${DEBUGDIR}enigma2_debug_$(date +%Y-%m-%d_%H-%M-%S).log"
+		LD_PRELOAD="${LIBS}" ENIGMA_DEBUG_LVL="${DEBUG_LVL}" ENIGMA_DEBUG_TIME="${DEBUG_TIME}" "@bindir@/enigma2" >> "${FILE}" 2>&1
+	fi
+
+
+	# Enigma2 exit codes:
+	#
+	#  1 - halt
+	#  2 - reboot
+	#  3 - restart enigma in normal mode
+	#  4 - front processor upgrade
+	#  5 - install new settings
+	#  6 - restart enigma in debug mode
+	#  7 - manufacturer reset
+	# 12 - Reboot to android
+	# 16 - Reboot to recovery
+	# 42 - offline update
+	# 43 - restart for autoinstall
+	# 44 - INI MICOM upgrade
+	# 45 - GigaBlue WOL
+	#
+	# >128 signal
+
+	RET=$?
+	case ${RET} in
+		1)
+			/sbin/halt
+			;;
+		2)
+			[ -f /proc/stb/fp/force_restart ] && echo "1" > /proc/stb/fp/force_restart
+			/sbin/reboot
+			;;
+		3)
+			ENIGMA_DEBUG_LVL="3"
+			;;
+		4)
+			/sbin/rmmod lcd
+			"@sbindir@/fpupgrade" --upgrade 2>&1 | tee /home/root/fpupgrade.log
+			sleep 0.1;
+			/sbin/rmmod fp
+			/sbin/modprobe fp
+			/sbin/reboot
+			;;
+		5)
+			if ! grep -q config.misc.RestartUI /etc/enigma2/settings; then
+				echo "config.misc.RestartUI=true" >>/etc/enigma2/settings
+			fi
+			;;
+		6)
+			ENIGMA_DEBUG_LVL="4"
+			;;
+		7)
+			rm -R /etc/enigma2
+			;;
+		12)
+			if [ -e /dev/block/by-name/bootoptions ]; then
+				mkdir -p /tmp/bootoptions
+				mount /dev/block/by-name/bootoptions /tmp/bootoptions
+				cp -f /tmp/bootoptions/STARTUP_ANDROID /tmp/bootoptions/STARTUP_ONCE
+			else
+				echo "rescue" > /proc/stb/fp/boot_mode
+			fi
+			[ -e "@bindir@/setenv" ] && "@bindir@/setenv" default_sys 1
+			[ -e "@sbindir@/fw_setenv" ] && "@sbindir@/fw_setenv" bootfromnand 1
+			/sbin/reboot
+			;;
+		16)
+			if [ -e /dev/block/by-name/flag ]; then
+				echo -n "0" > /dev/block/by-name/flag
+			elif [ -e /dev/block/by-name/bootoptions ]; then
+				mkdir -p /tmp/bootoptions
+				mount /dev/block/by-name/bootoptions /tmp/bootoptions
+				cp -f /tmp/bootoptions/STARTUP_RECOVERY /tmp/bootoptions/STARTUP_ONCE
+			else
+				echo "rescue" > /proc/stb/fp/boot_mode
+			fi
+			/sbin/reboot
+			;;
+		42)
+			# bind the console (when available)
+			[ -f /sys/class/vtconsole/vtcon1/bind ] && echo "1" > /sys/class/vtconsole/vtcon1/bind
+			PREVUPD="0"
+			CURRUPD="999"
+			opkg update 2>&1 | tee /home/root/opkgupgrade.log
+			# check if we need to upgrade busybox first
+			if [ "$(opkg list-upgradable busybox)" != "" ]; then
+				opkg update busybox 2>&1 | tee -a /home/root/opkgupgrade.log
+			fi
+			# update all other packages installed on the rootfs
+			while [ "${CURRUPD}" -gt "0" ] && [ "${CURRUPD}" -ne "${PREVUPD}" ]; do
+				opkg upgrade 2>&1 | tee -a /home/root/opkgupgrade.log
+				PREVUPD="${CURRUPD}"
+				CURRUPD=`opkg list-upgradable | wc -l`
+				echo "===> ${CURRUPD} PACKAGE(S) REMAINING" >> /home/root/opkgupgrade.log
+			done
+			# and remaining install destinations
+			df -P | grep -v "tmpfs " | awk '{print $6}' | tail -n +3 > /tmp/upgrade_mountpoints.txt
+			while read LINE; do
+				if [ -f "${LINE}/var/lib/opkg/status" ]; then
+				DESTS="${DESTS}" --add-dest "${LINE}":"${LINE}"
+			fi
+			done < /tmp/upgrade_mountpoints.txt
+			if [ "$DESTS" != "" ]; then
+				opkg upgrade "${DESTS}" 2>&1 | tee -a /home/root/opkgupgrade.log
+			fi
+			/sbin/reboot
+			;;
+		43)
+			# Auto install and autobackup.
+			[ -f /sys/class/vtconsole/vtcon1/bind ] && echo "1" > /sys/class/vtconsole/vtcon1/bind
+			/etc/init.d/settings-restore.sh
+			/etc/init.d/avahi-daemon stop
+			ifdown eth1
+			ip addr flush dev eth1 scope global
+			ifdown eth0
+			ip addr flush dev eth0 scope global
+			/etc/init.d/networking stop
+			killall -9 udhcpc
+			rm /var/run/udhcpc*
+			/etc/init.d/dbus-1 reload
+			/etc/init.d/networking start
+			/etc/init.d/avahi-daemon start
+			if [ ! -f /etc/.doNotAutoinstall ]; then
+				touch /etc/.doAutoinstall
+			else
+				rm -f /etc/.doNotAutoInstall
+			fi
+			break
+			;;
+		44)
+			"@libdir@/enigma2/python/Plugins/SystemPlugins/MICOMUpgrade/bin/fbclear"
+			"@bindir@/showiframe" "@libdir@/enigma2/python/Plugins/SystemPlugins/MICOMUpgrade/wait.mvi"
+			echo "fpupload" >/proc/vfd && sleep 3 && dd bs=256k if=/tmp/micom.bin of=/dev/mcu
+			"@bindir@/showiframe" "@libdir@/enigma2/python/Plugins/SystemPlugins/MICOMUpgrade/reboot.mvi"
+			# Wait forever for the user to power off.
+			while(true) ; do sleep 60 ; done
+			;;
+		45)
+			echo "    " > /dev/lcd0
+			"@bindir@/gigablue_wol"
+			;;
+		*)
+			break
+			;;
+	esac
+done

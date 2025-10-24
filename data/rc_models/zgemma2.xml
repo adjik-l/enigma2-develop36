@@ -1,0 +1,57 @@
+<rcs>
+	<rc id="1">
+		<button label="POWER" pos="27,33" />
+		<button label="MUTE" pos="96,33" />
+		<button label="1" pos="27,55" />
+		<button label="2" pos="60,55" />
+		<button label="3" pos="95,55" />
+		<button label="4" pos="27,77" />
+		<button label="5" pos="60,77" />
+		<button label="6" pos="95,77" />
+		<button label="7" pos="27,99" />
+		<button label="8" pos="60,99" />
+		<button label="9" pos="95,99" />
+		<button label="ARROWLEFT" pos="27,121" />
+		<button label="0" pos="60,121" />
+		<button label="ARROWRIGHT" pos="95,121" />
+		<button label="TEXT" pos="27,143" />
+		<button label="AUDIO" pos="60,143" />
+		<button label="SUBTITLE" pos="95,143" />
+		<button label="RECALL" pos="23,165" />
+		<button label="INFO" pos="98,165" />
+		<button label="UP" pos="61,179" />
+		<button label="LEFT" pos="32,207" />
+		<button label="OK" pos="61,207" />
+		<button label="RIGHT" pos="90,207" />
+		<button label="DOWN" pos="61,234" />
+		<button label="EXIT" pos="23,248" />
+		<button label="EPG" pos="98,248" />
+		<button label="MENU" pos="61,264" />
+		<button label="VOL+" pos="25,273" />
+		<button label="BOUQUET+" pos="97,273" />
+		<button label="PORTAL" pos="61,286" />
+		<button label="VOL-" pos="25,306" />
+		<button label="PVR" pos="61,309" />
+		<button label="BOUQUET-" pos="97,306" />
+		<button label="RED" pos="20,329" />
+		<button label="GREEN" pos="48,329" />
+		<button label="YELLOW" pos="76,329" />
+		<button label="BLUE" pos="103,329" />
+		<button label="RECORD" pos="20,354" />
+		<button label="STOP" pos="48,354" />
+		<button label="PLAYPAUSE" pos="76,354" />
+		<button label="TIMER" pos="103,354" />
+		<button label="PREVIOUSSONG" pos="20,373" />
+		<button label="REWIND" pos="48,373" />
+		<button label="FASTFORWARD" pos="76,373" />
+		<button label="NEXTSONG" pos="103,373" />
+		<button label="TV" pos="20,393" />
+		<button label="RADIO" pos="48,393" />
+		<button label="SLEEP" pos="76,393" />
+		<button label="HELP" pos="103,393" />
+		<button label="VMODE" pos="20,412" />
+		<button label="FAV" pos="48,412" />
+		<button label="PLUGIN" pos="76,412" />
+		<button label="WEB" pos="103,412" />
+	</rc>
+</rcs>
