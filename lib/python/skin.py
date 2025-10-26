@@ -132,7 +132,8 @@ def InitSkins():
 			break
 		print(f"[Skin] Error: Adding {name} GUI skin '{config.skin.primary_skin.value}' has failed!")
 		result.append(skin)
-	# add skin user fallback for scope skins skin_fallback_1080 in skin_1080.xml
+# Add an optional skin related user skin "user_skin_<SkinName>.xml".  If there is
+# not a skin related user skin then try to add am optional generic user skin.
 	result = None
 	if isfile(resolveFilename(SCOPE_SKINS, config.skin.primary_skin.value)):
 		name = USER_SKIN_TEMPLATE % dirname(str(config.skin.primary_skin.value))
