@@ -18,11 +18,10 @@ config.debug = ConfigSubsection()
 
 MODULE_NAME = __name__.split(".")[-1].capitalize()
 
-DEFAULT_SKIN = SystemInfo["HasFullHDSkinSupport"] and "OctEtFHD/skin.xml"
+DEFAULT_SKIN = SystemInfo["HasFullHDSkinSupport"] and "PLi-FullNightHD/skin.xml"
 DEFAULT_DISPLAY_SKIN = SystemInfo["grautec"] and "skin_default/skin_display_grautec.xml" or "skin_default/skin_display.xml"
-SKIN_DEFAULT = "skin_default/skin.xml"
-EMERGENCY_NAME = "OctEtFHD"
-EMERGENCY_SKIN = "skin_fallback_1080/skin.xml"
+EMERGENCY_NAME = "Stone II"
+EMERGENCY_SKIN = "skin_default/skin.xml"
 SUBTITLE_SKIN = "skin_subtitles.xml"
 USER_SKIN_TEMPLATE = "skin_user_%s.xml"
 USER_SKIN = "skin_user.xml"
